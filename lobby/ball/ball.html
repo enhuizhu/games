@@ -1,0 +1,385 @@
+<!doctype html>
+<html>
+<head>
+<title>ball experienc</title>
+<style type="text/css">
+ #ballcanvas{
+   background-color:yellow;
+ }
+</style>
+<script language="javascript">
+var requestAnimationFrame = window.requestAnimationFrame || window.mozRequestAnimationFrame ||  
+                        window.webkitRequestAnimationFrame || window.msRequestAnimationFrame;
+//var cancelAnimationFrame = window.CancelAnimationFrame || window.CancelReque;
+var speed=0;
+var cont_btn=new Image();
+cont_btn.src="images/button.png";
+var rang_x,rang_y;
+
+function layer(can_id){
+   this.canva=null;
+   this.ctx=null;
+   this.start_time=null;
+   this.last_time=null;   
+   this.frame=null;
+   this.state=null;
+   this.level=2;
+   this.listening=0;
+   that=this;
+   this.init=function(e,r){
+      this.canva=document.getElementById(can_id);
+	  //this.canva.focus();
+	  this.ctx=this.canva.getContext("2d");
+	  this.state="run";
+	  this.ball.angle=Math.PI/6;
+	 // this.ball.v=2;
+	  this.ball.r=r;
+      this.ball.x=this.ball.r+this.ball.border;
+	  this.ball.y=this.canva.height-this.ball.r-this.ball.border-20;
+      this.flap.y=this.canva.height-this.flap.border*2-this.flap.height;
+      this.blocks_mother.rows=this.level;
+      //init blocks
+      var w=(this.canva.width-this.blocks_mother.col_dis*5)/4;
+      var h=5;
+      var number=this.blocks_mother.rows*this.blocks_mother.cols;
+      for(var n=0;n<number;n++){
+	    this.blocks_mother.children[n]={
+	        w:0,
+	        h:5,
+	        x:0,
+	        y:0,
+	       color:"black"
+	   }
+
+	  }
+      
+    this.addevent=function(eventname,handler){
+      document.getElementById(can_id).addEventListener(eventname,handler,false);
+	 }	
+     for(var r=0;r<this.blocks_mother.rows;r++){
+      for(var i=0;i<this.blocks_mother.cols;i++){
+		this.blocks_mother.children[r*this.blocks_mother.cols+i].w=w;
+		this.blocks_mother.children[r*this.blocks_mother.cols+i].h=h;
+		this.blocks_mother.children[r*this.blocks_mother.cols+i].x=this.blocks_mother.col_dis*(i+1)+w*i;
+		console.log(this.blocks_mother.col_dis*(i+1)+w*i);
+		this.blocks_mother.children[r*this.blocks_mother.cols+i].y=this.blocks_mother.row_dis*(r+1)+h*r;
+        }
+     }
+      
+      
+      this.start_time=new Date().getTime();
+	  this.frame=0;
+	  this.draw();
+	}
+	
+  	
+   
+   this.ball={
+	 angle:Math.PI/6,
+     x:0,
+	 y:0,
+	 v:0,
+	 a:0,
+	 r:5,
+	 border:4,
+	 direction:"right"
+   };
+   
+   this.flap={
+    width:80,
+    height:10,
+    x:0,
+    y:0,
+    v:0,
+    border:1,
+    border_color:"blue",
+    state:"stop"
+   }
+   
+   //add blocks to the canvas
+
+   
+   this.blocks_mother={
+    rows:1,
+    cols:4,
+    col_dis:10,
+    row_dis:10,
+    children:new Array()
+    }
+   
+   this.draw=function(){
+	  this.clean();
+	  this.move();
+	  
+	  if(this.state=="run"){
+	  //draw the blocks
+	  for(var i=0; i<this.blocks_mother.children.length;i++){
+	     var child=this.blocks_mother.children[i];
+	     this.ctx.beginPath();
+	     this.ctx.fillStyle=child.color;
+	     this.ctx.rect(child.x, child.y, child.w, child.h);
+	     this.ctx.closePath();
+	     this.ctx.fill();
+	   }
+	  
+	  //draw the ball
+	  this.ctx.beginPath();
+	  this.ctx.fillStyle="black";
+	  this.ctx.arc(this.ball.x, this.ball.y , this.ball.r, 0, 2*Math.PI, false);
+	  this.ctx.lineWidth=this.ball.border;
+	  this.ctx.strokeStyle="green";
+	  this.ctx.closePath();
+	  this.ctx.stroke();
+	  this.ctx.fill();
+
+	  
+	  
+	   //draw the flap
+	  this.ctx.beginPath();
+	  this.ctx.fillStyle="green";
+	  this.ctx.rect(this.flap.x+this.flap.border , this.flap.y , this.flap.width , this.flap.height);
+	  this.ctx.lineWidth=this.flap.border;
+	  this.ctx.strokeStyle=this.flap.border_color;
+	  this.ctx.closePath();
+	  this.ctx.stroke();
+	  this.ctx.fill();
+	  
+	  this.last_time=new Date().getTime();
+	  this.frame++;
+	  if(this.last_time-this.start_time>=1000){
+	    this.start_time=this.last_time;
+		document.getElementById("status").innerHTML=this.frame+"fps";
+		this.frame=0;
+	  }
+    }else if(this.state=="over"){
+	   var text="game over";
+       //var y=1/2*(c_h-t_h);
+	   this.ctx.font="40pt Calibri";
+	   this.ctx.textAlign="center";
+	   //text+=x;
+	   this.ctx.fillText(text,200,100);
+	   //draw btn
+	   var c_w=this.canva.width;
+	   var c_h=this.canva.height;
+	   var i_w=cont_btn.width;
+	   var i_h=cont_btn.height;
+	   var x=1/2*(c_w-i_w);
+	   var y=1/2*(c_h-i_h);
+       this.ctx.drawImage(cont_btn,x,y);
+	   
+	 }else if(this.state=="win"){
+       var text="you win";
+	   var metrics=this.ctx.measureText(text);
+	   var c_w=this.canva.width;
+	   var c_h=this.canva.height;
+	   var t_w=metrics.width;
+	   var t_h=metrics.height;
+	   var x=1/2*(c_w-t_w);
+	   //var y=1/2*(c_h-t_h);
+	   this.ctx.font="40pt Calibri";
+	   this.ctx.fillStyle="black";
+	   this.ctx.textAlign="center";
+	   this.ctx.fillText(text,x,100);
+	   
+	   var i_w=cont_btn.width;
+	   var i_h=cont_btn.height;
+	   var x=1/2*(c_w-i_w);
+	   var y=1/2*(c_h-i_h);
+       this.ctx.drawImage(cont_btn,x,y);
+	   //console.log(metrics);	 
+	 
+	 }
+	  //console.log();
+	 // requestAnimationFrame(this.draw());
+         
+   }
+   
+   this.clean=function(){
+     this.ctx.clearRect(0,0,this.canva.width,this.canva.height);
+	 this.canva.width=this.canva.width;
+   }
+   
+   this.move=function(){
+     var y_l=this.ball.y+this.ball.r+this.ball.border;
+     var x_l=this.ball.x;
+     var y_l_u=this.ball.y-this.ball.r-this.ball.border;
+      
+     if(this.blocks_mother.children.length<=0){
+	    this.state="win";
+	    this.level++;
+	   var c_w=this.canva.width;
+	   var c_h=this.canva.height;
+	   var i_w=cont_btn.width;
+	   var i_h=cont_btn.height;
+	   var x=1/2*(c_w-i_w);
+	   var y=1/2*(c_h-i_h);
+       rang_x=[x,x+i_w];
+	   rang_y=[y,y+i_h];
+	   if(this.listening==0){
+	   this.addevent("click",function(event){
+	     codinates=testfun(event);
+		 console.log(codinates);
+		 console.log(rang_x, rang_y);
+		 if(codinates.x>=rang_x[0] && codinates.x<=rang_x[1] && codinates.y>=rang_y[0] && codinates.y<=rang_y[1]){
+		   console.log("click");
+		   init_game();
+		 }
+	   },false);
+        this.listening=1;		
+		}
+	    //alert("win");
+	 }
+      //touch the blocks
+      for(var i=0;i<this.blocks_mother.children.length;i++){
+	     var child=this.blocks_mother.children[i];
+	     if(x_l>=child.x && x_l<=child.x+child.w && y_l_u<=child.y+child.h && y_l_u>child.y){
+		   console.log("touch the blocks border");
+		   mylayer.blocks_mother.children.splice(i,1);
+		   this.ball.angle=-this.ball.angle;
+		   break;
+		 }
+	   }
+      
+      
+      //touch the right,left border, angle change
+	 
+      if((this.ball.x+this.ball.r+this.ball.border)>=this.canva.width || this.ball.x-this.ball.r-this.ball.border<0){
+	    console.log(this.ball.x-this.ball.r-this.ball.border);
+	    console.log(this.ball.x,this.ball.r,this.ball.border);
+		
+		console.log("touch the right,left border, angle change");
+		this.ball.angle=Math.PI-this.ball.angle;
+	  }
+	  //touch the top border
+	  if(this.ball.y-this.ball.r-this.ball.border<=0){
+	    console.log("touch the top border");
+	    this.ball.angle=-this.ball.angle
+	  }
+	  
+	  //touch the ground
+	 if(this.ball.y+this.ball.r+this.ball.border>=this.canva.height){
+	   this.ball.v=0;
+	   this.state="over";
+	   var c_w=this.canva.width;
+	   var c_h=this.canva.height;
+	   var i_w=cont_btn.width;
+	   var i_h=cont_btn.height;
+	   var x=1/2*(c_w-i_w);
+	   var y=1/2*(c_h-i_h);
+       rang_x=[x,x+i_w];
+	   rang_y=[y,y+i_h];
+	   if(this.listening==0){
+	   this.addevent("click",function(event){
+	     codinates=testfun(event);
+		 console.log(codinates);
+		 console.log(rang_x, rang_y);
+		 if(codinates.x>=rang_x[0] && codinates.x<=rang_x[1] && codinates.y>=rang_y[0] && codinates.y<=rang_y[1]){
+		   //alert("click btn");
+		 }
+	   },false);
+        this.listening=1;		
+		}
+	  //alert("game over!");
+	   //cancel animate
+	  }
+      
+     //touch the flap
+   
+     if(y_l>=this.flap.y && y_l<this.flap.y+this.flap.height && x_l>this.flap.x && x_l<this.flap.x+this.flap.width){
+	   this.ball.angle=-this.ball.angle;
+	  } 
+      
+      this.ball.x+=Math.round(this.ball.v*Math.cos(this.ball.angle));
+      this.ball.y-=Math.round(this.ball.v*Math.sin(this.ball.angle));
+      
+      if(this.flap.state=="move"){
+	    //no tocuch border then move
+	    //console.log(this.flap.x);
+	    this.flap.x+=this.flap.v;
+	    if((this.flap.x+this.flap.width+this.flap.border>this.canva.width) || this.flap.x<0){
+	       this.flap.x-=this.flap.v;
+	      // console.log("flap.x:",this.flap.x,this.flap.state,this.flap.v);  
+	       this.flap.v=0;
+	     }
+	     
+	    
+	  }
+	   
+   
+   }   
+}
+
+
+function init_game(event){
+ // mylayer=new layer("ballcanvas");
+ mylayer.init(event,10);
+ mylayer.ball.v=2;
+ animate();
+}
+
+function getdirection(e){
+//  console.log("hello",e.keyCode);
+  
+  switch (e.keyCode){
+	case 39: 
+      mylayer.flap.state="move";
+      mylayer.flap.v=3;
+      mylayer.flap.v=Math.abs(mylayer.flap.v);
+      break;
+    case 37:
+      mylayer.flap.state="move";
+      mylayer.flap.v=3;
+      mylayer.flap.v=-Math.abs(mylayer.flap.v);
+      break;
+  }
+  //mylayer.move();
+ }
+ 
+function stopflap(e){
+   if(e.keyCode==39 || e.keyCode==37){
+     mylayer.flap.state="stop";
+   }
+}
+
+ 
+function animate(){
+  mylayer.draw();
+  if(mylayer.state=="run"){
+  requestAnimationFrame(animate);
+  }
+  //console.log(new Date().getTime());
+  }
+
+  
+function win(){
+ 
+mylayer.blocks_mother.children=new Array();
+ }
+  
+var mylayer;
+
+window.onload=function(event){
+ mylayer=new layer("ballcanvas");
+ mylayer.init(event,10);
+ mylayer.ball.v=2;
+ animate();
+ //requestAnimationFrame(mylayer.draw()); 
+ //window.addEventListener("keypress",getdirection(event),false);
+}
+
+function testfun(event){
+  var can_x=event.pageX-event.target.offsetLeft;
+  var can_y=event.pageY-event.target.offsetTop;
+   return{"x":can_x,"y":can_y};
+  }
+
+</script>
+</head>
+<body onkeydown="getdirection(event)" onkeyup="stopflap(event)">
+<h1>ball experience</h1>
+<div id="status"></div>
+
+<canvas id="ballcanvas" width="400" height="400">
+</canvas>
+</body>
+</html>
